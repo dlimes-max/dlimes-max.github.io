@@ -3,277 +3,333 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>金币悬赏令 · 地点签到 + 商城</title>
-    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#3b3f8c">
+    <title>金币悬赏令</title>
+    
+    <!-- PWA 配置 -->
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%E9%87%91%E5%B8%81%E6%82%AC%E8%B5%8F%E4%BB%A4%22%2C%22short_name%22%3A%22%E6%82%AC%E8%B5%8F%E4%BB%A4%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f2f5fc%22%2C%22theme_color%22%3A%22%233b3f8c%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fui-avatars.com%2Fapi%2F%3Fname%3D%F0%9F%AA%99%26background%3D3b3f8c%26color%3Dfff%26size%3D192%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fui-avatars.com%2Fapi%2F%3Fname%3D%F0%9F%AA%99%26background%3D3b3f8c%26color%3Dfff%26size%3D512%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+    
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body {
             font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: #f2f5fc;
-            padding: 16px 12px 30px;
-            min-height: 100vh;
             color: #1e293b;
-            -webkit-tap-highlight-color: transparent;
+            min-height: 100vh;
+            padding-bottom: 80px; /* 给底部导航留空间 */
         }
-        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
-        .app-header h1 { font-size: 1.6rem; font-weight: 700; background: linear-gradient(135deg, #3b3f8c, #6d5fd9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px; }
-        .coin-badge { background: #1e293b; padding: 8px 16px; border-radius: 40px; display: flex; align-items: center; gap: 6px; box-shadow: 0 6px 12px rgba(0,0,0,0.06); color: white; font-weight: 600; font-size: 1.1rem; flex-wrap: wrap; justify-content: center; }
-        .coin-badge span:first-child { font-size: 1.4rem; line-height: 1; }
-        .coin-icon { font-size: 1.2rem; }
-        .sub-badge { font-size: 0.7rem; background: #475569; padding: 2px 8px; border-radius: 20px; margin-left: 4px; white-space: nowrap; }
-        .card { background: white; border-radius: 24px; padding: 18px; margin-bottom: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.03), 0 2px 6px rgba(0,0,0,0.02); border: 1px solid rgba(255,255,255,0.5); }
-        .card-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-        .card-title .emoji { font-size: 1.5rem; }
-        .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-        button { background: #ffffff; border: 1px solid #d9e2ef; padding: 12px 18px; border-radius: 60px; font-size: 1rem; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: #1e293b; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.15s; cursor: pointer; -webkit-tap-highlight-color: transparent; flex: 1 0 auto; }
-        button.primary { background: #3b3f8c; border: 1px solid #3b3f8c; color: white; box-shadow: 0 6px 12px rgba(59,63,140,0.2); }
-        button.primary:active { background: #2d316b; transform: scale(0.97); }
-        button.secondary { background: #f8faff; border-color: #cbd5e1; }
-        button:active { transform: scale(0.97); background: #f1f5f9; }
-        button:disabled { opacity: 0.5; pointer-events: none; filter: grayscale(0.4); }
-        .small-btn { padding: 8px 14px; font-size: 0.9rem; flex: 0 1 auto; }
-        .input-group { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
-        label { font-size: 0.9rem; font-weight: 500; color: #475569; }
-        input, textarea { width: 100%; padding: 14px 16px; border-radius: 18px; border: 1.5px solid #e2e8f0; font-size: 1rem; font-family: inherit; background: #f9fcff; transition: 0.15s; outline: none; }
-        input:focus, textarea:focus { border-color: #3b3f8c; background: white; box-shadow: 0 0 0 3px rgba(59,63,140,0.1); }
-        textarea { min-height: 90px; resize: vertical; }
-        .quest-list { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
-        .quest-item { background: #f9fafc; border-radius: 20px; padding: 16px; border-left: 5px solid #3b3f8c; display: flex; flex-direction: column; gap: 10px; }
-        .quest-title { font-weight: 600; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; }
-        .quest-reward { background: #fef9c3; padding: 4px 12px; border-radius: 40px; font-weight: 700; color: #854d0e; font-size: 0.9rem; }
-        .quest-desc { color: #475569; font-size: 0.95rem; word-break: break-word; }
-        .quest-actions { display: flex; gap: 10px; align-items: center; margin-top: 4px; }
-        .quest-actions button { padding: 10px 16px; font-size: 0.9rem; flex: 1; }
-        .empty-state { color: #94a3b8; text-align: center; padding: 24px 10px; font-size: 0.95rem; }
-        .settlement-list { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; margin-top: 8px; padding-right: 4px; }
-        .settlement-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; background: #f8fafc; border-radius: 16px; font-size: 0.95rem; border-bottom: 1px solid #eef2f6; }
-        .settlement-item .note { color: #334155; display: flex; flex-direction: column; gap: 2px; }
-        .settlement-item .time { font-size: 0.7rem; color: #94a3b8; }
-        .settlement-item .amount { font-weight: 700; }
-        .amount.positive { color: #0b8a3c; }
-        .amount.negative { color: #b91c1c; }
-        .expire-hint { font-size: 0.8rem; color: #b45309; background: #fffbeb; padding: 6px 12px; border-radius: 30px; margin-top: 8px; display: inline-block; }
-        .toast-message { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 12px 24px; border-radius: 60px; font-size: 0.95rem; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 999; white-space: nowrap; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .toast-message.show { opacity: 1; }
-        .footer-note { text-align: center; color: #94a3b8; font-size: 0.75rem; margin-top: 20px; }
-        .flex-between { display: flex; justify-content: space-between; align-items: center; }
-        .mt-2 { margin-top: 10px; }
+        
+        /* 顶部状态栏 */
+        .app-header {
+            position: sticky;
+            top: 0;
+            background: rgba(242, 245, 252, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            padding: 16px 16px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .app-header h1 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #3b3f8c, #6d5fd9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .coin-badge {
+            background: #1e293b;
+            padding: 6px 12px;
+            border-radius: 20px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .sub-badge {
+            font-size: 0.65rem;
+            background: #f59e0b;
+            color: #78350f;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 4px;
+            font-weight: 700;
+        }
 
-        /* 商城样式 - 修复：添加 position: relative */
-        .store-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 12px; }
-        .store-item { 
-            background: #fff; 
-            border: 2px solid #eee; 
-            border-radius: 16px; 
-            padding: 16px 10px; 
-            text-align: center; 
-            position: relative;  /* ✅ 关键修复 */
-            transition: 0.2s; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03); 
+        /* 页面内容区 */
+        .page-content { padding: 0 16px 20px; }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
         }
-        .store-item:hover { border-color: #ff9800; transform: translateY(-2px); }
-        .store-icon { font-size: 40px; margin-bottom: 8px; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.1)); }
-        .store-name { font-weight: bold; margin-bottom: 5px; color: #333; font-size: 14px; }
-        .store-price { color: #ff5252; font-weight: bold; margin-bottom: 12px; font-size: 16px; }
-        .btn-buy { background: #ff9800; color: white; border: none; padding: 8px 12px; border-radius: 40px; cursor: pointer; font-weight: bold; width: 100%; font-size: 0.9rem; transition: 0.2s; }
-        .btn-buy:disabled { background: #e0e0e0; color: #999; cursor: not-allowed; }
-        .btn-buy:not(:disabled):active { background: #e68900; transform: scale(0.96); }
-        .add-goods-box { background: #fff8e1; border: 2px dashed #ffb300; border-radius: 16px; padding: 15px; margin-top: 18px; }
-        /* ✅ 删除按钮：加大点击区域 + z-index */
-        .btn-delete-item { 
-            position: absolute; 
-            top: 4px; 
-            right: 4px; 
-            background: rgba(255,255,255,0.9); 
-            border: none; 
-            color: #bbb; 
-            cursor: pointer; 
-            font-size: 20px; 
-            line-height: 1; 
-            width: 32px; 
-            height: 32px; 
-            border-radius: 50%; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            z-index: 10;  /* ✅ 确保在最上层 */
-            transition: 0.2s;
+        .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        
+        /* 按钮通用 */
+        button {
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
-        .btn-delete-item:hover, .btn-delete-item:active { color: #f44336; background: #fee2e2; }
+        button:active { transform: scale(0.96); }
+        button:disabled { opacity: 0.5; pointer-events: none; }
+        .btn-primary { background: #3b3f8c; color: white; padding: 12px; width: 100%; }
+        .btn-secondary { background: #f1f5f9; color: #475569; padding: 8px 14px; font-size: 0.9rem; }
+        .btn-small { padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; }
 
-        /* 位置签到 */
-        .geo-hint { font-size: 0.8rem; color: #475569; margin-top: 6px; }
-        .geo-status { font-size: 0.85rem; font-weight: 500; padding: 4px 10px; border-radius: 40px; display: inline-block; margin-top: 6px; }
+        /* 输入框 */
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; font-size: 0.85rem; font-weight: 600; color: #64748b; margin-bottom: 6px; }
+        input, textarea {
+            width: 100%; padding: 12px; border-radius: 12px; border: 1.5px solid #e2e8f0;
+            font-size: 0.95rem; background: #f8fafc; outline: none; transition: 0.2s;
+        }
+        input:focus, textarea:focus { border-color: #3b3f8c; background: white; }
+
+        /* 悬赏卡片 */
+        .quest-item { background: #f8fafc; border-radius: 16px; padding: 16px; margin-bottom: 12px; border-left: 4px solid #3b3f8c; }
+        .quest-title { font-weight: 700; font-size: 1.05rem; display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .quest-reward { color: #b45309; background: #fef3c7; padding: 2px 8px; border-radius: 12px; font-size: 0.85rem; }
+        .quest-desc { font-size: 0.85rem; color: #64748b; margin-bottom: 12px; }
+        .quest-actions { display: flex; gap: 8px; }
+
+        /* 商城网格 */
+        .store-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .store-item { background: #fff; border: 1.5px solid #f1f5f9; border-radius: 16px; padding: 16px 10px; text-align: center; position: relative; }
+        .btn-delete-item { position: absolute; top: 6px; right: 6px; background: #f1f5f9; color: #94a3b8; width: 24px; height: 24px; border-radius: 50%; font-size: 16px; }
+        .store-icon { font-size: 36px; margin-bottom: 6px; }
+        .store-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+        .store-price { color: #ff5252; font-weight: 800; font-size: 1rem; margin-bottom: 10px; }
+        .btn-buy { background: #ff9800; color: white; width: 100%; padding: 8px; font-size: 0.85rem; border-radius: 8px; }
+
+        /* 历史记录 */
+        .history-item { background: white; border-radius: 12px; padding: 14px; margin-bottom: 10px; border: 1px solid #e2e8f0; }
+        .history-header { display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 8px; }
+        .history-status.success { color: #059669; }
+        .history-status.fail { color: #dc2626; }
+        .history-note { background: #f8fafc; padding: 10px; border-radius: 8px; font-size: 0.85rem; color: #334155; margin-top: 8px; white-space: pre-wrap; }
+
+        /* 结算列表 */
+        .ledger-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #e2e8f0; font-size: 0.9rem; }
+        .amount.positive { color: #059669; font-weight: 700; }
+        .amount.negative { color: #dc2626; font-weight: 700; }
+
+        /* 底部导航栏 */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            display: flex; justify-content: space-around; align-items: center;
+            padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+            z-index: 1000;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            color: #94a3b8; font-size: 0.75rem; font-weight: 600; cursor: pointer;
+            transition: 0.2s; width: 60px;
+        }
+        .nav-item.active { color: #3b3f8c; transform: translateY(-2px); }
+        .nav-icon { font-size: 1.4rem; filter: grayscale(1); transition: 0.2s; }
+        .nav-item.active .nav-icon { filter: grayscale(0); }
+
+        /* 提示框 */
+        .toast {
+            position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+            background: #1e293b; color: white; padding: 10px 20px; border-radius: 30px;
+            font-size: 0.9rem; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 9999;
+            white-space: nowrap;
+        }
+        .toast.show { opacity: 1; transform: translate(-50%, -10px); }
+
+        /* 定位状态 */
+        .geo-status { font-size: 0.8rem; font-weight: 600; padding: 6px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; background: #f1f5f9; color: #475569; }
         .geo-status.ok { background: #dcfce7; color: #166534; }
         .geo-status.far { background: #fee2e2; color: #991b1b; }
-        .geo-status.pending { background: #e2e8f0; color: #475569; }
 
-        /* 金币分类 */
-        .coin-detail { display: flex; gap: 12px; font-size: 0.8rem; margin-top: 4px; flex-wrap: wrap; }
-        .coin-detail .tag { background: #f1f5f9; padding: 4px 10px; border-radius: 20px; font-weight: 500; }
-        .tag.limited { background: #fef3c7; color: #b45309; }
-        .tag.permanent { background: #dcfce7; color: #166534; }
-
-        /* 模态框 */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 16px; }
-        .modal-content { background: white; padding: 22px; border-radius: 24px; width: 100%; max-width: 420px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
-        .modal-content h3 { margin-top: 0; margin-bottom: 12px; }
-        .btn-confirm { background: #3b3f8c; color: white; border: none; padding: 12px 18px; border-radius: 40px; cursor: pointer; font-weight: bold; font-size: 1rem; }
-        .btn-cancel { background: #f1f5f9; color: #334155; border: 1px solid #d1d9e6; padding: 12px 18px; border-radius: 40px; cursor: pointer; font-weight: bold; font-size: 1rem; }
-        .img-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; margin: 5px 5px 0 0; border: 1px solid #ddd; }
-
-        /* 特效 */
-        @keyframes jellyBounce { 0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0; } 40% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; } 60% { transform: translate(-50%, -50%) scale(0.9); } 80% { transform: translate(-50%, -50%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
-        .effect-thumb { position: fixed; top: 50%; left: 50%; z-index: 9999; font-size: 180px; pointer-events: none; animation: jellyBounce 2s forwards; }
-        @keyframes neonFloatUp { 0% { transform: translate(-50%, -10%); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } 80% { transform: translate(-50%, -100%) scale(1.5) rotate(5deg); opacity: 0.9; } 100% { transform: translate(-50%, -150%) scale(2); opacity: 0; } }
-        .effect-neon { position: fixed; top: 50%; left: 50%; z-index: 9999; font-size: 80px; font-weight: 900; font-style: italic; pointer-events: none; background: linear-gradient(45deg, #ff0055, #ffeb3b, #00e5ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(255,0,85,0.8)) drop-shadow(0 0 20px rgba(255,235,59,0.6)); animation: neonFloatUp 2.5s forwards; }
-        @keyframes critStrike { 0% { transform: translate(-50%, -50%) scale(5); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; } 30% { transform: translate(-50%, -50%) scale(1.2) rotate(-5deg); } 40% { transform: translate(-50%, -50%) scale(1) rotate(5deg); } 50% { transform: translate(-50%, -50%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
-        .effect-100 { position: fixed; top: 50%; left: 50%; z-index: 9999; font-size: 200px; font-weight: 900; font-style: italic; color: #ff1744; text-shadow: 4px 4px 0px #000, -4px -4px 0px #000, 0 0 50px rgba(255,23,68,0.8); pointer-events: none; animation: critStrike 1.5s forwards; }
-        @keyframes crownDrop { 0% { transform: translate(-50%, -300%); opacity: 0; } 50% { transform: translate(-50%, -50%); opacity: 1; filter: drop-shadow(0 0 50px rgba(255,215,0,1)); } 70% { transform: translate(-50%, -60%); } 100% { transform: translate(-50%, -50%); opacity: 0; } }
-        .effect-crown { position: fixed; top: 50%; left: 50%; z-index: 9999; font-size: 150px; pointer-events: none; animation: crownDrop 2s forwards; }
-        @keyframes catPeek { 0% { transform: translate(100%, 100%) rotate(-45deg); opacity: 0; } 30% { transform: translate(-20px, -20px) rotate(0deg); opacity: 1; } 70% { transform: translate(-20px, -20px) rotate(5deg); opacity: 1; } 100% { transform: translate(100%, 100%) rotate(-45deg); opacity: 0; } }
-        .effect-cat { position: fixed; bottom: 0; right: 0; z-index: 9999; font-size: 180px; pointer-events: none; animation: catPeek 2.5s forwards; }
+        /* 弹窗 */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 2000; padding: 16px; }
+        .modal-content { background: white; padding: 20px; border-radius: 20px; width: 100%; max-width: 380px; max-height: 85vh; overflow-y: auto; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
     </style>
 </head>
 <body>
     <div id="app">
+        <!-- 顶部 -->
         <div class="app-header">
             <h1>⚡ 金币悬赏令</h1>
             <div class="coin-badge">
-                <span class="coin-icon">🪙</span>
+                <span>🪙</span>
                 <span>{{ totalCoins }}</span>
-                <span class="sub-badge">限时 {{ limitedCoins }}</span>
+                <span class="sub-badge" v-if="limitedCoins > 0">限时 {{ limitedCoins }}</span>
             </div>
         </div>
 
-        <!-- 签到卡片 -->
-        <div class="card">
-            <div class="card-title"><span class="emoji">📍</span> 地点签到 · 领100金币</div>
-            <p style="font-size: 0.9rem; color: #475569; margin-bottom: 8px;">
-                基于GPS位置签到，需在指定地点附近（<strong>200米内</strong>）才能成功。金币仅今日有效。
-            </p>
-            <div class="row" style="flex-wrap: wrap;">
-                <button id="signInBtn" class="primary" :disabled="signed || !nearby" @click="signIn" style="flex:2;">
-                    {{ signed ? '✅ 今日已签到' : (nearby ? '📡 签到领取100金币' : '📍 不在签到范围内') }}
-                </button>
-                <button class="secondary small-btn" @click="locate" style="flex:1;">📡 定位</button>
-            </div>
-            <div class="geo-hint" v-if="geoStatus">{{ geoStatus }}</div>
-            <div class="geo-status" :class="nearby ? 'ok' : (geoStatus.includes('距离') ? 'far' : 'pending')">
-                {{ nearby ? '✅ 在签到范围内' : (geoStatus.includes('距离') ? '❌ 超出范围' : '📍 点击定位检查') }}
-            </div>
-            <div class="expire-hint">⏳ 限时金币将在午夜清零，优先花费限时金币</div>
-            <div style="margin-top: 12px; border-top: 1px dashed #e2e8f0; padding-top: 12px;">
-                <div class="flex-between">
-                    <span style="font-size:0.8rem; color:#475569;">🏁 签到点坐标</span>
-                    <button class="secondary small-btn" @click="setCheckinLocation" style="padding: 4px 12px; font-size:0.8rem;">设为当前位置</button>
-                </div>
-                <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">
-                    {{ checkinLat ? `纬度 ${checkinLat.toFixed(6)}, 经度 ${checkinLng.toFixed(6)}` : '尚未设置签到点' }}
-                </div>
-            </div>
-        </div>
-
-        <!-- 发布悬赏 -->
-        <div class="card">
-            <div class="card-title"><span class="emoji">📜</span> 发布悬赏令</div>
-            <div class="input-group">
-                <label>任务标题</label>
-                <input type="text" v-model="newQuest.title" placeholder="例如：整理书桌、跑步2公里" maxlength="30">
-            </div>
-            <div class="input-group">
-                <label>悬赏金币 (20~200随机)</label>
-                <div class="flex-between" style="gap: 10px;">
-                    <input type="number" v-model.number="newQuest.reward" readonly style="background:#f1f5f9;">
-                    <button class="secondary small-btn" @click="refreshReward" style="flex:0 0 auto;">🎲 随机</button>
-                </div>
-            </div>
-            <div class="input-group">
-                <label>任务描述 (可选)</label>
-                <input type="text" v-model="newQuest.desc" placeholder="简单说明..." maxlength="60">
-            </div>
-            <button class="primary mt-2" style="width:100%;" @click="publishQuest">📢 发布悬赏令</button>
-        </div>
-
-        <!-- 悬赏列表 -->
-        <div class="card">
-            <div class="card-title"><span class="emoji">🎯</span> 进行中的悬赏</div>
-            <div class="quest-list">
-                <div v-if="quests.length === 0" class="empty-state">还没有悬赏令，发布一个吧</div>
-                <div v-for="quest in quests" :key="quest.id" class="quest-item">
-                    <div class="quest-title">
-                        <span>{{ quest.title }}</span>
-                        <span class="quest-reward">🪙 {{ quest.reward }}</span>
-                    </div>
-                    <div class="quest-desc" v-if="quest.desc">{{ quest.desc }}</div>
-                    <div class="quest-actions">
-                        <button v-if="!quest.completed" class="primary small-btn" @click="completeQuest(quest)">✍️ 写心得并完成</button>
-                        <button v-else class="small-btn" disabled style="background:#e9eef3;">✅ 已完成</button>
-                        <button class="secondary small-btn" @click="deleteQuest(quest)" style="flex:0 0 70px;">🗑️ 删除</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 金币结算 -->
-        <div class="card">
-            <div class="card-title"><span class="emoji">📊</span> 今日金币结算</div>
-            <div class="flex-between" style="margin-bottom: 8px;">
-                <span style="font-weight:500;">今日收支</span>
-                <span style="font-weight:700; color:#3b3f8c;">{{ todayIncome >= 0 ? '+' : '' }}{{ todayIncome }} 🪙</span>
-            </div>
-            <div class="settlement-list">
-                <div v-if="records.length === 0" class="empty-state" style="padding:12px;">暂无记录</div>
-                <div v-for="r in records" :key="r.id" class="settlement-item">
-                    <div class="note">
-                        <span>{{ r.note }}</span>
-                        <span class="time">{{ r.time }}</span>
-                    </div>
-                    <div class="amount" :class="r.amount >= 0 ? 'positive' : 'negative'">{{ r.amount >= 0 ? '+' : '' }}{{ r.amount }} 🪙</div>
-                </div>
-            </div>
-            <div style="font-size:0.75rem; color:#94a3b8; margin-top: 12px; border-top: 1px dashed #e2e8f0; padding-top: 12px;">
-                ⏱️ 签到金币每日清零，悬赏金币永久有效。消费时优先扣除限时金币。
-            </div>
-        </div>
-
-        <!-- 商城 - 修复删除按钮 -->
-        <div class="card">
-            <div class="card-title"><span class="emoji">🛒</span> 金币商城 <span style="font-size:0.8rem; font-weight:400; color:#94a3b8; margin-left:auto;">限时金币优先</span></div>
-            <div class="store-grid">
-                <div v-for="(item, index) in storeItems" :key="item.id" class="store-item">
-                    <button class="btn-delete-item" @click.stop="deleteGoods(index)" title="下架商品">×</button>
-                    <div class="store-icon">{{ item.icon }}</div>
-                    <div class="store-name">{{ item.name }}</div>
-                    <div class="store-price">{{ item.price }} 🪙</div>
-                    <button class="btn-buy" :disabled="totalCoins < item.price" @click="buyGoods(index, $event)">
-                        {{ totalCoins < item.price ? '金币不足' : '马上兑换' }}
+        <!-- ================= 页面 1：悬赏大厅 ================= -->
+        <div class="page-content" v-show="currentTab === 'hall'">
+            <!-- 签到 -->
+            <div class="card">
+                <div class="card-title">📍 地点签到</div>
+                <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 12px;">在指定地点 200 米内签到，获得 100 限时金币（午夜清零）。</p>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-primary" :disabled="signed || !nearby" @click="signIn" style="flex:2;">
+                        {{ signed ? '已签到' : (nearby ? '签到领 100' : '不在范围内') }}
                     </button>
+                    <button class="btn-secondary" @click="locate" style="flex:1;">定位</button>
+                </div>
+                <div class="geo-status" :class="nearby ? 'ok' : (geoStatus.includes('距离') ? 'far' : '')">{{ geoStatus }}</div>
+                <div style="margin-top: 12px; border-top: 1px dashed #e2e8f0; padding-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.75rem; color: #94a3b8;">签到点已设置: {{ checkinLat ? '是' : '否' }}</span>
+                    <button class="btn-secondary btn-small" @click="setCheckinLocation">设为当前位置</button>
                 </div>
             </div>
-            <div class="add-goods-box">
-                <strong style="color:#b45309;">✨ 上架新奖励</strong>
-                <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
-                    <input type="text" v-model="newGoods.icon" placeholder="图标" style="width: 70px; flex:1; padding:10px;">
-                    <input type="text" v-model="newGoods.name" placeholder="名称" style="flex:2; padding:10px;">
-                    <input type="number" v-model.number="newGoods.price" placeholder="价格" style="width: 90px; flex:1; padding:10px;">
+
+            <!-- 发布悬赏 -->
+            <div class="card">
+                <div class="card-title">📜 发布悬赏令</div>
+                <div class="input-group">
+                    <label>任务标题</label>
+                    <input type="text" v-model="newQuest.title" placeholder="例如：跑步 3 公里">
                 </div>
-                <button class="btn-confirm" @click="addGoods" style="width:100%; margin-top:10px;">上架到商城</button>
+                <div class="input-group">
+                    <label>悬赏金币 (20~200随机)</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="number" v-model.number="newQuest.reward" readonly style="background: #f1f5f9; text-align: center;">
+                        <button class="btn-secondary" @click="refreshReward">🎲 随机</button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>任务描述 (可选)</label>
+                    <input type="text" v-model="newQuest.desc" placeholder="简单说明...">
+                </div>
+                <button class="btn-primary" @click="publishQuest">📢 发布悬赏令</button>
+            </div>
+
+            <!-- 悬赏列表 -->
+            <div class="card">
+                <div class="card-title">🎯 进行中的悬赏</div>
+                <div v-if="quests.length === 0" style="text-align: center; color: #94a3b8; font-size: 0.9rem; padding: 20px 0;">暂无悬赏，快去发布一个吧</div>
+                <div v-for="q in quests" :key="q.id" class="quest-item">
+                    <div class="quest-title">
+                        <span>{{ q.title }}</span>
+                        <span class="quest-reward">{{ q.reward }} 🪙</span>
+                    </div>
+                    <div class="quest-desc" v-if="q.desc">{{ q.desc }}</div>
+                    <div class="quest-actions">
+                        <button v-if="!q.completed" class="btn-primary btn-small" @click="completeQuest(q)" style="flex: 1;">✍️ 写心得完成</button>
+                        <button v-else class="btn-secondary btn-small" disabled style="flex: 1;">✅ 已完成</button>
+                        <button class="btn-secondary btn-small" @click="deleteQuest(q)" style="flex: 0.4; background:#fee2e2; color:#b91c1c;">删除</button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="footer-note">📍 地点签到 · 悬赏令 · 限时金币优先消费</div>
+        <!-- ================= 页面 2：金币商城 ================= -->
+        <div class="page-content" v-show="currentTab === 'store'">
+            <div class="card">
+                <div class="card-title">🛒 兑换商城</div>
+                <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 16px;">消费时优先扣除限时金币，保留永久金币。</p>
+                
+                <div class="store-grid">
+                    <div v-for="(item, index) in storeItems" :key="item.id" class="store-item">
+                        <button class="btn-delete-item" @click.stop="deleteGoods(index)">×</button>
+                        <div class="store-icon">{{ item.icon }}</div>
+                        <div class="store-name">{{ item.name }}</div>
+                        <div class="store-price">{{ item.price }} 🪙</div>
+                        <button class="btn-buy" :disabled="totalCoins < item.price" @click="buyGoods(index, $event)">
+                            {{ totalCoins < item.price ? '金币不足' : '兑换' }}
+                        </button>
+                    </div>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 16px; padding: 16px;">
+                    <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 12px; color: #3b3f8c;">✨ 上架新商品</div>
+                    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                        <input type="text" v-model="newGoods.icon" placeholder="图标(如🎮)" style="width: 80px; text-align: center;">
+                        <input type="text" v-model="newGoods.name" placeholder="商品名称" style="flex: 1;">
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="number" v-model.number="newGoods.price" placeholder="所需金币" style="flex: 1;">
+                        <button class="btn-primary" @click="addGoods" style="width: 80px;">上架</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 页面 3：我的档案 ================= -->
+        <div class="page-content" v-show="currentTab === 'profile'">
+            <!-- 今日结算 -->
+            <div class="card">
+                <div class="card-title">📊 今日收支</div>
+                <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 1.1rem; margin-bottom: 12px;">
+                    <span>合计</span>
+                    <span :style="{ color: todayIncome >= 0 ? '#059669' : '#dc2626' }">{{ todayIncome >= 0 ? '+' : '' }}{{ todayIncome }} 🪙</span>
+                </div>
+                <div style="max-height: 200px; overflow-y: auto;">
+                    <div v-if="records.length === 0" style="text-align: center; color: #94a3b8; font-size: 0.9rem; padding: 10px;">今日暂无收支</div>
+                    <div v-for="r in records" :key="r.id" class="ledger-item">
+                        <div>
+                            <div style="color: #334155; font-weight: 500;">{{ r.note }}</div>
+                            <div style="font-size: 0.7rem; color: #94a3b8;">{{ r.time }}</div>
+                        </div>
+                        <div class="amount" :class="r.amount >= 0 ? 'positive' : 'negative'">{{ r.amount >= 0 ? '+' : '' }}{{ r.amount }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 历史任务 -->
+            <div class="card">
+                <div class="card-title">📜 历史完成档案</div>
+                <div v-if="completedQuests.length === 0" style="text-align: center; color: #94a3b8; font-size: 0.9rem; padding: 20px 0;">还没有完成过任务哦</div>
+                <div v-for="q in completedQuests" :key="q.id" class="history-item">
+                    <div class="history-header">
+                        <span>{{ q.title }}</span>
+                        <span class="history-status success">已完成 +{{ q.reward }}</span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 8px;">完成时间: {{ q.completeTime }}</div>
+                    <div class="history-note" v-if="q.insight">
+                        <strong style="color: #64748b;">📝 心得：</strong><br>{{ q.insight }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部导航栏 -->
+        <div class="bottom-nav">
+            <div class="nav-item" :class="{ active: currentTab === 'hall' }" @click="currentTab = 'hall'">
+                <span class="nav-icon">🎯</span>
+                <span>悬赏大厅</span>
+            </div>
+            <div class="nav-item" :class="{ active: currentTab === 'store' }" @click="currentTab = 'store'">
+                <span class="nav-icon">🛒</span>
+                <span>金币商城</span>
+            </div>
+            <div class="nav-item" :class="{ active: currentTab === 'profile' }" @click="currentTab = 'profile'">
+                <span class="nav-icon">👤</span>
+                <span>我的档案</span>
+            </div>
+        </div>
 
         <!-- Toast -->
-        <div class="toast-message" :class="{show: toastVisible}">{{ toastMsg }}</div>
+        <div class="toast" :class="{show: toastVisible}">{{ toastMsg }}</div>
     </div>
 
     <script>
         const { createApp, ref, computed, onMounted } = Vue;
-
-        const STORAGE_KEY = 'coinQuestApp_v2';
+        const STORAGE_KEY = 'coinQuestApp_v3';
 
         function getDefaultData() {
             return {
@@ -284,7 +340,8 @@
                 checkinLat: null,
                 checkinLng: null,
                 quests: [],
-                records: [],
+                completedQuests: [], // 历史完成任务
+                records: [],         // 今日收支记录
                 storeItems: [
                     { id: 1, icon: '🎮', name: '玩两小时游戏', price: 100 },
                     { id: 2, icon: '🧋', name: '喝一杯奶茶', price: 50 },
@@ -299,20 +356,14 @@
             try {
                 const data = JSON.parse(stored);
                 const today = new Date().toISOString().slice(0,10);
+                // 日期变了，重置限时金币和记录
                 if (data.day !== today) {
-                    const fresh = getDefaultData();
-                    fresh.permanentCoins = data.permanentCoins || 0;
-                    fresh.quests = data.quests || [];
-                    fresh.storeItems = data.storeItems || fresh.storeItems;
-                    fresh.checkinLat = data.checkinLat || null;
-                    fresh.checkinLng = data.checkinLng || null;
-                    fresh.signed = false;
-                    fresh.limitedCoins = 0;
-                    fresh.records = [];
-                    fresh.day = today;
-                    return fresh;
+                    data.limitedCoins = 0;
+                    data.signed = false;
+                    data.records = [];
+                    data.day = today;
                 }
-                return { ...getDefaultData(), ...data, limitedCoins: data.limitedCoins || 0, permanentCoins: data.permanentCoins || 0 };
+                return { ...getDefaultData(), ...data };
             } catch (e) {
                 return getDefaultData();
             }
@@ -325,102 +376,112 @@
         createApp({
             setup() {
                 const appData = ref(loadData());
+                const currentTab = ref('hall'); // 'hall' | 'store' | 'profile'
+                
                 const toastVisible = ref(false);
                 const toastMsg = ref('');
-                const geoStatus = ref('');
+                const geoStatus = ref('尚未定位');
                 const nearby = ref(false);
+                
                 const newQuest = ref({ title: '', desc: '', reward: 80 });
                 const newGoods = ref({ icon: '', name: '', price: '' });
 
+                // 计算属性
                 const totalCoins = computed(() => appData.value.limitedCoins + appData.value.permanentCoins);
                 const limitedCoins = computed(() => appData.value.limitedCoins);
                 const signed = computed(() => appData.value.signed);
-                const quests = computed(() => appData.value.quests);
+                const quests = computed(() => appData.value.quests.filter(q => !q.completed));
+                const completedQuests = computed(() => appData.value.completedQuests || []);
                 const records = computed(() => appData.value.records);
                 const storeItems = computed(() => appData.value.storeItems);
                 const checkinLat = computed(() => appData.value.checkinLat);
-                const checkinLng = computed(() => appData.value.checkinLng);
                 const todayIncome = computed(() => appData.value.records.reduce((sum, r) => sum + r.amount, 0));
 
+                // 提示
                 function showToast(msg) {
                     toastMsg.value = msg;
                     toastVisible.value = true;
                     clearTimeout(window._toastTimer);
-                    window._toastTimer = setTimeout(() => { toastVisible.value = false; }, 2200);
+                    window._toastTimer = setTimeout(() => { toastVisible.value = false; }, 2000);
                 }
 
+                // 生成随机金币
                 function refreshReward() {
                     newQuest.value.reward = Math.floor(Math.random() * 181) + 20;
                 }
 
+                // 发布悬赏
                 function publishQuest() {
                     const title = newQuest.value.title.trim();
                     if (!title) { showToast('请输入任务标题'); return; }
                     appData.value.quests.push({
-                        id: Date.now() + Math.floor(Math.random() * 1000),
-                        title, desc: newQuest.value.desc.trim(),
-                        reward: newQuest.value.reward, completed: false,
+                        id: Date.now(),
+                        title, 
+                        desc: newQuest.value.desc.trim(),
+                        reward: newQuest.value.reward, 
+                        completed: false,
                     });
                     saveData(appData.value);
                     newQuest.value.title = '';
                     newQuest.value.desc = '';
                     refreshReward();
-                    showToast(`悬赏发布成功！报酬 ${appData.value.quests[appData.value.quests.length-1].reward} 金币`);
+                    showToast('悬赏发布成功！');
                 }
 
-                function deleteQuest(quest) {
-                    const idx = appData.value.quests.findIndex(q => q.id === quest.id);
-                    if (idx === -1) return;
-                    if (!quest.completed && !confirm('悬赏尚未完成，确定删除吗？')) return;
-                    appData.value.quests.splice(idx, 1);
+                // 删除悬赏
+                function deleteQuest(q) {
+                    if (!confirm('确定要删除这个悬赏吗？')) return;
+                    appData.value.quests = appData.value.quests.filter(item => item.id !== q.id);
                     saveData(appData.value);
-                    showToast('已删除悬赏');
+                    showToast('已删除');
                 }
 
-                function completeQuest(quest) {
-                    if (quest.completed) { showToast('该悬赏已完成'); return; }
+                // 完成悬赏
+                function completeQuest(q) {
                     const insight = prompt('请填写任务心得（至少10个字）:', '');
                     if (insight === null) return;
                     const trimmed = insight.trim();
-                    if (trimmed.length < 10) { showToast('心得至少10个字，请重新填写'); return; }
-                    appData.value.permanentCoins += quest.reward;
-                    quest.completed = true;
-                    addRecord('完成任务「' + quest.title + '」(永久)', quest.reward);
-                    triggerRandomCelebration();
+                    if (trimmed.length < 10) { showToast('心得至少10个字哦'); return; }
+
+                    q.completed = true;
+                    q.insight = trimmed;
+                    const now = new Date();
+                    q.completeTime = `${now.getMonth()+1}月${now.getDate()}日 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                    
+                    // 移入历史记录
+                    appData.value.completedQuests.unshift(q);
+                    appData.value.quests = appData.value.quests.filter(item => item.id !== q.id);
+
+                    // 加金币
+                    appData.value.permanentCoins += q.reward;
+                    addRecord(`完成任务「${q.title}」`, q.reward);
+
                     saveData(appData.value);
-                    showToast(`任务完成！获得 ${quest.reward} 永久金币`);
+                    triggerRandomCelebration();
+                    showToast(`完成！获得 ${q.reward} 永久金币`);
                 }
 
+                // 记录
                 function addRecord(note, amount) {
                     const now = new Date();
                     const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
                     appData.value.records.unshift({ id: Date.now() + Math.random(), time: timeStr, note, amount });
-                    if (appData.value.records.length > 60) appData.value.records.pop();
                     saveData(appData.value);
                 }
 
+                // 定位相关
                 function locate() {
-                    if (!navigator.geolocation) {
-                        geoStatus.value = '浏览器不支持定位';
-                        nearby.value = false;
-                        return;
-                    }
-                    // 检测是否为安全上下文
-                    if (!window.isSecureContext) {
-                        geoStatus.value = '⚠️ 非HTTPS环境，定位被浏览器禁用。请通过HTTPS访问本页（如GitHub Pages）';
-                        nearby.value = false;
-                        return;
-                    }
+                    if (!navigator.geolocation) { geoStatus.value = '浏览器不支持定位'; return; }
+                    if (!window.isSecureContext) { geoStatus.value = '⚠️ 需要 HTTPS 环境才能定位'; return; }
+                    
                     geoStatus.value = '定位中...';
                     navigator.geolocation.getCurrentPosition(
                         (pos) => {
                             const lat = pos.coords.latitude;
                             const lng = pos.coords.longitude;
-                            if (appData.value.checkinLat == null || appData.value.checkinLng == null) {
-                                geoStatus.value = '尚未设置签到点，请先设置';
-                                nearby.value = false;
-                                return;
-                            }
+                            if (appData.value.checkinLat == null) { geoStatus.value = '尚未设置签到点'; nearby.value = false; return; }
+
+                            // 计算距离
                             const R = 6371e3;
                             const φ1 = lat * Math.PI / 180;
                             const φ2 = appData.value.checkinLat * Math.PI / 180;
@@ -428,44 +489,32 @@
                             const Δλ = (appData.value.checkinLng - lng) * Math.PI / 180;
                             const a = Math.sin(Δφ/2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) ** 2;
                             const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
                             if (distance <= 200) {
                                 nearby.value = true;
-                                geoStatus.value = `✅ 距离签到点 ${distance.toFixed(0)} 米，可以签到`;
+                                geoStatus.value = `✅ 距离签到点 ${distance.toFixed(0)} 米`;
                             } else {
                                 nearby.value = false;
-                                geoStatus.value = `❌ 距离签到点 ${distance.toFixed(0)} 米，需在200米内`;
+                                geoStatus.value = `❌ 距签到点 ${distance.toFixed(0)} 米`;
                             }
                         },
-                        (err) => {
-                            if (err.code === 1) {
-                                geoStatus.value = '❌ 定位权限被拒绝，请在浏览器设置中允许定位';
-                            } else {
-                                geoStatus.value = `❌ 定位失败: ${err.message}`;
-                            }
-                            nearby.value = false;
-                        },
+                        (err) => { geoStatus.value = '定位失败，请检查权限'; nearby.value = false; },
                         { enableHighAccuracy: true, timeout: 10000 }
                     );
                 }
 
                 function setCheckinLocation() {
-                    if (!navigator.geolocation) { showToast('浏览器不支持定位'); return; }
-                    if (!window.isSecureContext) { showToast('⚠️ 需要HTTPS环境才能定位'); return; }
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            appData.value.checkinLat = pos.coords.latitude;
-                            appData.value.checkinLng = pos.coords.longitude;
-                            saveData(appData.value);
-                            showToast('签到点已设为当前坐标');
-                            locate();
-                        },
-                        (err) => { showToast('获取位置失败: ' + err.message); }
-                    );
+                    navigator.geolocation.getCurrentPosition((pos) => {
+                        appData.value.checkinLat = pos.coords.latitude;
+                        appData.value.checkinLng = pos.coords.longitude;
+                        saveData(appData.value);
+                        showToast('签到点已更新');
+                        locate();
+                    });
                 }
 
                 function signIn() {
-                    if (appData.value.signed) { showToast('今日已签到'); return; }
-                    if (!nearby.value) { showToast('不在签到范围内，请先定位检查'); return; }
+                    if (!nearby.value) return;
                     appData.value.limitedCoins += 100;
                     appData.value.signed = true;
                     addRecord('地点签到奖励(限时)', 100);
@@ -474,93 +523,55 @@
                     triggerRandomCelebration();
                 }
 
+                // 商城相关
                 function buyGoods(index, event) {
                     const item = appData.value.storeItems[index];
-                    if (totalCoins.value < item.price) { showToast('金币不足'); return; }
-                    if (!confirm(`确定花费 ${item.price} 金币兑换【${item.name}】吗？\n(优先扣除限时金币)`)) return;
+                    if (totalCoins.value < item.price) return;
+                    if (!confirm(`确定花费 ${item.price} 金币兑换【${item.name}】吗？`)) return;
 
                     let remaining = item.price;
                     if (appData.value.limitedCoins >= remaining) {
                         appData.value.limitedCoins -= remaining;
-                        remaining = 0;
                     } else {
                         remaining -= appData.value.limitedCoins;
                         appData.value.limitedCoins = 0;
                         appData.value.permanentCoins -= remaining;
                     }
-                    addRecord(`兑换商城「${item.name}」`, -item.price);
+                    addRecord(`兑换「${item.name}」`, -item.price);
                     saveData(appData.value);
                     showToast(`成功兑换 ${item.name}！`);
 
                     if (event) {
                         const rect = event.target.getBoundingClientRect();
-                        const x = (rect.left + rect.width / 2) / window.innerWidth;
-                        const y = (rect.top + rect.height / 2) / window.innerHeight;
-                        confetti({ particleCount: 60, spread: 360, origin: { x, y }, colors: ['#ffb300', '#4CAF50', '#03A9F4'], zIndex: 9999 });
+                        confetti({ particleCount: 50, spread: 360, origin: { x: (rect.left + rect.width/2)/window.innerWidth, y: (rect.top + rect.height/2)/window.innerHeight }, zIndex: 9999 });
                     }
                 }
 
                 function addGoods() {
-                    if (!newGoods.value.name || !newGoods.value.price) { showToast('请填写商品名称和价格'); return; }
-                    const price = parseInt(newGoods.value.price);
-                    if (isNaN(price) || price <= 0) { showToast('价格必须为正整数'); return; }
+                    if (!newGoods.value.name || !newGoods.value.price) { showToast('请填写完整'); return; }
                     appData.value.storeItems.push({
                         id: Date.now(),
                         icon: newGoods.value.icon || '🎁',
                         name: newGoods.value.name,
-                        price: price,
+                        price: parseInt(newGoods.value.price),
                     });
                     newGoods.value = { icon: '', name: '', price: '' };
                     saveData(appData.value);
-                    showToast('商品已上架');
+                    showToast('上架成功');
                 }
 
                 function deleteGoods(index) {
-                    if (!confirm('确定下架该商品吗？')) return;
+                    if (!confirm('确定下架吗？')) return;
                     appData.value.storeItems.splice(index, 1);
                     saveData(appData.value);
-                    showToast('已下架');
                 }
 
-                function showFloatingElement(type, text) {
-                    const el = document.createElement('div');
-                    el.className = `effect-${type}`;
-                    el.innerText = text;
-                    document.body.appendChild(el);
-                    setTimeout(() => { if (el.parentNode) document.body.removeChild(el); }, 3000);
-                }
-
+                // 特效
                 function triggerRandomCelebration() {
                     const effects = [
-                        () => {
-                            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6, x: 0 }, colors: ['#ffb300', '#4CAF50', '#03A9F4'], zIndex: 9999 });
-                            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6, x: 1 }, colors: ['#ffb300', '#4CAF50', '#03A9F4'], zIndex: 9999 });
-                        },
-                        () => {
-                            var end = Date.now() + 2000;
-                            (function frame() {
-                                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, zIndex: 9999 });
-                                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, zIndex: 9999 });
-                                if (Date.now() < end) { requestAnimationFrame(frame); }
-                            }());
-                        },
-                        () => {
-                            var fish = confetti.shapeFromText({ text: '🐟', scalar: 2 });
-                            confetti({ particleCount: 100, spread: 360, origin: { y: 0 }, gravity: 1.5, shapes: [fish], scalar: 2, zIndex: 9999 });
-                        },
-                        () => {
-                            var end = Date.now() + 2000;
-                            (function frame() {
-                                confetti({ particleCount: 2, angle: 90, spread: 360, startVelocity: 15, gravity: 0.5, origin: { y: 0 }, colors: ['#ffffff', '#e0f7fa', '#b2ebf2'], zIndex: 9999 });
-                                if (Date.now() < end) { requestAnimationFrame(frame); }
-                            }());
-                        },
-                        () => { confetti({ particleCount: 200, spread: 180, origin: { y: -0.2 }, gravity: 1.2, colors: ['#FFD700', '#FFA500', '#FF8C00'], zIndex: 9999 }); },
-                        () => { showFloatingElement('thumb', '👍'); },
-                        () => { showFloatingElement('neon', '太强了!🔥'); },
-                        () => { showFloatingElement('100', '100'); },
-                        () => { showFloatingElement('crown', '👑'); },
-                        () => { showFloatingElement('cat', '🐱'); },
+                        () => confetti({ particleCount: 150, spread: 70, origin: { y: 0.6, x: 0 }, zIndex: 9999 }),
+                        () => confetti({ particleCount: 100, spread: 360, origin: { y: 0 }, gravity: 1.5, shapes: [confetti.shapeFromText({ text: '🪙' })], scalar: 2, zIndex: 9999 }),
+                        () => confetti({ particleCount: 200, spread: 180, origin: { y: -0.2 }, gravity: 1.2, colors: ['#FFD700', '#FFA500'], zIndex: 9999 })
                     ];
                     effects[Math.floor(Math.random() * effects.length)]();
                 }
@@ -568,32 +579,33 @@
                 onMounted(() => {
                     refreshReward();
                     if (appData.value.checkinLat != null) locate();
+                    
+                    // 每次检查日期是否变化
                     setInterval(() => {
                         const today = new Date().toISOString().slice(0,10);
                         if (appData.value.day !== today) {
-                            const fresh = loadData();
-                            appData.value = fresh;
-                            saveData(appData.value);
+                            appData.value = loadData();
                             showToast('新的一天！限时金币已重置');
-                            nearby.value = false;
-                            geoStatus.value = '';
                         }
                     }, 30000);
                 });
 
                 return {
-                    appData, totalCoins, limitedCoins, signed, quests, records, storeItems,
-                    checkinLat, checkinLng, todayIncome, newQuest, newGoods,
+                    currentTab, totalCoins, limitedCoins, signed, quests, completedQuests,
+                    records, storeItems, checkinLat, todayIncome, newQuest, newGoods,
                     toastVisible, toastMsg, geoStatus, nearby,
                     refreshReward, publishQuest, deleteQuest, completeQuest,
                     signIn, locate, setCheckinLocation, buyGoods, addGoods, deleteGoods,
                 };
             }
         }).mount('#app');
-    </script>
-    <script>
+
+        // 注册 Service Worker (用于 PWA 安装)
         if ('serviceWorker' in navigator) {
-              navigator.serviceWorker.register('/sw.js');
+            const swCode = `self.addEventListener('install',(e)=>self.skipWaiting());self.addEventListener('activate',(e)=>e.waitUntil(clients.claim()));self.addEventListener('fetch',(e)=>{});`;
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(swUrl).catch(() => {});
         }
     </script>
 </body>
