@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>金币悬赏令 · 地点签到 + 商城</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f2f5fc;
+            padding: 16px 12px 30px;
+            min-height: 100vh;
+            color: #1e293b;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+        .app-header h1 { font-size: 1.6rem; font-weight: 700; background: linear-gradient(135deg, #3b3f8c, #6d5fd9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px; }
+        .coin-badge { background: #1e293b; padding: 8px 16px; border-radius: 40px; display: flex; align-items: center; gap: 6px; box-shadow: 0 6px 12px rgba(0,0,0,0.06); color: white; font-weight: 600; font-size: 1.1rem; flex-wrap: wrap; justify-content: center; }
+        .coin-badge span:first-child { font-size: 1.4rem; line-height: 1; }
+        .coin-icon { font-size: 1.2rem; }
+        .sub-badge { font-size: 0.7rem; background: #475569; padding: 2px 8px; border-radius: 20px; margin-left: 4px; white-space: nowrap; }
+        .card { background: white; border-radius: 24px; padding: 18px; margin-bottom: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.03), 0 2px 6px rgba(0,0,0,0.02); border: 1px solid rgba(255,255,255,0.5); }
+        .card-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .card-title .emoji { font-size: 1.5rem; }
+        .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        button { background: #ffffff; border: 1px solid #d9e2ef; padding: 12px 18px; border-radius: 60px; font-size: 1rem; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: #1e293b; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.15s; cursor: pointer; -webkit-tap-highlight-color: transparent; flex: 1 0 auto; }
+        button.primary { background: #3b3f8c; border: 1px solid #3b3f8c; color: white; box-shadow: 0 6px 12px rgba(59,63,140,0.2); }
+        button.primary:active { background: #2d316b; transform: scale(0.97); }
+        button.secondary { background: #f8faff; border-color: #cbd5e1; }
+        button:active { transform: scale(0.97); background: #f1f5f9; }
+        button:disabled { opacity: 0.5; pointer-events: none; filter: grayscale(0.4); }
+        .small-btn { padding: 8px 14px; font-size: 0.9rem; flex: 0 1 auto; }
+        .input-group { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+        label { font-size: 0.9rem; font-weight: 500; color: #475569; }
+        input, textarea { width: 100%; padding: 14px 16px; border-radius: 18px; border: 1.5px solid #e2e8f0; font-size: 1rem; font-family: inherit; background: #f9fcff; transition: 0.15s; outline: none; }
+        input:focus, textarea:focus { border-color: #3b3f8c; background: white; box-shadow: 0 0 0 3px rgba(59,63,140,0.1); }
+        textarea { min-height: 90px; resize: vertical; }
+        .quest-list { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+        .quest-item { background: #f9fafc; border-radius: 20px; padding: 16px; border-left: 5px solid #3b3f8c; display: flex; flex-direction: column; gap: 10px; }
+        .quest-title { font-weight: 600; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; }
+        .quest-reward { background: #fef9c3; padding: 4px 12px; border-radius: 40px; font-weight: 700; color: #854d0e; font-size: 0.9rem; }
+        .quest-desc { color: #475569; font-size: 0.95rem; word-break: break-word; }
+        .quest-actions { display: flex; gap: 10px; align-items: center; margin-top: 4px; }
+        .quest-actions button { padding: 10px 16px; font-size: 0.9rem; flex: 1; }
+        .empty-state { color: #94a3b8; text-align: center; padding: 24px 10px; font-size: 0.95rem; }
+        .settlement-list { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; margin-top: 8px; padding-right: 4px; }
+        .settlement-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; background: #f8fafc; border-radius: 16px; font-size: 0.95rem; border-bottom: 1px solid #eef2f6; }
+        .settlement-item .note { color: #334155; display: flex; flex-direction: column; gap: 2px; }
+        .settlement-item .time { font-size: 0.7rem; color: #94a3b8; }
+        .settlement-item .amount { font-weight: 700; }
+        .amount.positive { color: #0b8a3c; }
+        .amount.negative { color: #b91c1c; }
+        .expire-hint { font-size: 0.8rem; color: #b45309; background: #fffbeb; padding: 6px 12px; border-radius: 30px; margin-top: 8px; display: inline-block; }
+        .toast-message { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 12px 24px; border-radius: 60px; font-size: 0.95rem; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 999; white-space: nowrap; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .toast-message.show { opacity: 1; }
+        .footer-note { text-align: center; color: #94a3b8; font-size: 0.75rem; margin-top: 20px; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .mt-2 { margin-top: 10px; }
+
+        /* 商城样式 - 修复：添加 position: relative */
+        .store-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 12px; }
+        .store-item { 
+            background: #fff; 
+            border: 2px solid #eee; 
+            border-radius: 16px; 
+            padding: 16px 10px; 
+            text-align: center; 
+            position: relative;  /* ✅ 关键修复 */
+            transition: 0.2s; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03); 
+        }
+        .store-item:hover { border-color: #ff9800; transform: translateY(-2px); }
+        .store-icon { font-size: 40px; margin-bottom: 8px; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.1)); }
+        .store-name { font-weight: bold; margin-bottom: 5px; color: #333; font-size: 14px; }
+        .store-price { color: #ff5252; font-weight: bold; margin-bottom: 12px; font-size: 16px; }
+        .btn-buy { background: #ff9800; color: white; border: none; padding: 8px 12px; border-radius: 40px; cursor: pointer; font-weight: bold; width: 100%; font-size: 0.9rem; transition: 0.2s; }
+        .btn-buy:disabled { background: #e0e0e0; color: #999; cursor: not-allowed; }
+        .btn-buy:not(:disabled):active { background: #e68900; transform: scale(0.96); }
+        .add-goods-box { background: #fff8e1; border: 2px dashed #ffb300; border-radius: 16px; padding: 15px; margin-top: 18px; }
+        /* ✅ 删除按钮：加大点击区域 + z-index */
+        .btn-delete-item { 
+            position: absolute; 
+            top: 4px; 
+            right: 4px; 
+            background: rgba(255,255,255,0.9); 
+            border: none; 
+            color: #bbb; 
+            cursor: pointer; 
+            font-size: 20px; 
+            line-height: 1; 
+            width: 32px; 
+            height: 32px; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 10;  /* ✅ 确保在最上层 */
+            transition: 0.2s;
+        }
+        .btn-delete-item:hover, .btn-delete-item:active { color: #f44336; background: #fee2e2; }
+
+        /* 位置签到 */
+        .geo-hint { font-size: 0.8rem; color: #475569; margin-top: 6px; }
+        .geo-status { font-size: 0.85rem; font-weight: 500; padding: 4px 10px; border-radius: 40px; display: inline-block; margin-top: 6px; }
+        .geo-status.ok { background: #dcfce7; color: #166534; }
+        .geo-status.far { background: #fee2e2; color: #991b1b; }
+        .geo-status.pending { background: #e2e8f0; color: #475569; }
+
+        /* 金币分类 */
+        .coin-detail { display: flex; gap: 12px; font-size: 0.8rem; margin-top: 4px; flex-wrap: wrap; }
+        .coin-detail .tag { background: #f1f5f9; padding: 4px 10px; border-radius: 20px; font-weight: 500; }
+        .tag.limited { background: #fef3c7; color: #b45309; }
+        .tag.permanent { background: #dcfce7; color: #166534; }
+
+        /* 模态框 */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 16px; }
+        .modal-content { background: white; padding: 22px; border-radius: 24px; width: 100%; max-width: 420px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+        .modal-content h3 { margin-top: 0; margin-bottom: 12px; }
+        .btn-confirm { background: #3b3f8c; color: white; border: none; padding: 12px 18px; border-radius: 40px; cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .btn-cancel { background: #f1f5f9; color: #334155; border: 1px solid #d1d9e6; padding: 12px 18px; border-radius: 40px; cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .img-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; margin: 5px 5px 0 0; border: 1px solid #ddd; }
+
+        /* 特效 */
+        @keyframes jellyBounce { 0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0; } 40% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; } 60% { transform: translate(-50%, -50%) scale(0.9); } 80% { transform: translate(-50%, -50%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
+        .effect-thumb { position: fixed; top: 50%; left: 50%; z-index: 9999; font-size: 180px; pointer-events: none; animation: jellyBounce 2s forwards; }
+        @keyframes neonFloatUp { 0% { transform: translate(-50%, -10%); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } 80% { transform: translate(-50%, -100%) scale(1.5) rotate(5deg); opacity: 0.9; } 100% { transform: translate(-50%, -150%) scale(2); opacity: 0; } }
+        .effect-neon { position: fixed; top: 50%; left: 50%; z-index: 9999; font-size: 80px; font-weight: 900; font-style: italic; pointer-events: none; background: linear-gradient(45deg, #ff0055, #ffeb3b, #00e5ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(255,0,85,0.8)) drop-shadow(0 0 20px rgba(255,235,59,0.6)); animation: neonFloatUp 2.5s forwards; }
+        @keyframes critStrike { 0% { transform: translate(-50%, -50%) scale(5); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; } 30% { transform: translate(-50%, -50%) scale(1.2) rotate(-5deg); } 40% { transform: translate(-50%, -50%) scale(1) rotate(5deg); } 50% { transform: translate(-50%, -50%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+        .effect-100 { position: fixed; top: 50%; left: 50%; z-index: 9999; font-size: 200px; font-weight: 900; font-style: italic; color: #ff1744; text-shadow: 4px 4px 0px #000, -4px -4px 0px #000, 0 0 50px rgba(255,23,68,0.8); pointer-events: none; animation: critStrike 1.5s forwards; }
+        @keyframes crownDrop { 0% { transform: translate(-50%, -300%); opacity: 0; } 50% { transform: translate(-50%, -50%); opacity: 1; filter: drop-shadow(0 0 50px rgba(255,215,0,1)); } 70% { transform: translate(-50%, -60%); } 100% { transform: translate(-50%, -50%); opacity: 0; } }
+        .effect-crown { position: fixed; top: 50%; left: 50%; z-index: 9999; font-size: 150px; pointer-events: none; animation: crownDrop 2s forwards; }
+        @keyframes catPeek { 0% { transform: translate(100%, 100%) rotate(-45deg); opacity: 0; } 30% { transform: translate(-20px, -20px) rotate(0deg); opacity: 1; } 70% { transform: translate(-20px, -20px) rotate(5deg); opacity: 1; } 100% { transform: translate(100%, 100%) rotate(-45deg); opacity: 0; } }
+        .effect-cat { position: fixed; bottom: 0; right: 0; z-index: 9999; font-size: 180px; pointer-events: none; animation: catPeek 2.5s forwards; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="app-header">
+            <h1>⚡ 金币悬赏令</h1>
+            <div class="coin-badge">
+                <span class="coin-icon">🪙</span>
+                <span>{{ totalCoins }}</span>
+                <span class="sub-badge">限时 {{ limitedCoins }}</span>
+            </div>
+        </div>
+
+        <!-- 签到卡片 -->
+        <div class="card">
+            <div class="card-title"><span class="emoji">📍</span> 地点签到 · 领100金币</div>
+            <p style="font-size: 0.9rem; color: #475569; margin-bottom: 8px;">
+                基于GPS位置签到，需在指定地点附近（<strong>200米内</strong>）才能成功。金币仅今日有效。
+            </p>
+            <div class="row" style="flex-wrap: wrap;">
+                <button id="signInBtn" class="primary" :disabled="signed || !nearby" @click="signIn" style="flex:2;">
+                    {{ signed ? '✅ 今日已签到' : (nearby ? '📡 签到领取100金币' : '📍 不在签到范围内') }}
+                </button>
+                <button class="secondary small-btn" @click="locate" style="flex:1;">📡 定位</button>
+            </div>
+            <div class="geo-hint" v-if="geoStatus">{{ geoStatus }}</div>
+            <div class="geo-status" :class="nearby ? 'ok' : (geoStatus.includes('距离') ? 'far' : 'pending')">
+                {{ nearby ? '✅ 在签到范围内' : (geoStatus.includes('距离') ? '❌ 超出范围' : '📍 点击定位检查') }}
+            </div>
+            <div class="expire-hint">⏳ 限时金币将在午夜清零，优先花费限时金币</div>
+            <div style="margin-top: 12px; border-top: 1px dashed #e2e8f0; padding-top: 12px;">
+                <div class="flex-between">
+                    <span style="font-size:0.8rem; color:#475569;">🏁 签到点坐标</span>
+                    <button class="secondary small-btn" @click="setCheckinLocation" style="padding: 4px 12px; font-size:0.8rem;">设为当前位置</button>
+                </div>
+                <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">
+                    {{ checkinLat ? `纬度 ${checkinLat.toFixed(6)}, 经度 ${checkinLng.toFixed(6)}` : '尚未设置签到点' }}
+                </div>
+            </div>
+        </div>
+
+        <!-- 发布悬赏 -->
+        <div class="card">
+            <div class="card-title"><span class="emoji">📜</span> 发布悬赏令</div>
+            <div class="input-group">
+                <label>任务标题</label>
+                <input type="text" v-model="newQuest.title" placeholder="例如：整理书桌、跑步2公里" maxlength="30">
+            </div>
+            <div class="input-group">
+                <label>悬赏金币 (20~200随机)</label>
+                <div class="flex-between" style="gap: 10px;">
+                    <input type="number" v-model.number="newQuest.reward" readonly style="background:#f1f5f9;">
+                    <button class="secondary small-btn" @click="refreshReward" style="flex:0 0 auto;">🎲 随机</button>
+                </div>
+            </div>
+            <div class="input-group">
+                <label>任务描述 (可选)</label>
+                <input type="text" v-model="newQuest.desc" placeholder="简单说明..." maxlength="60">
+            </div>
+            <button class="primary mt-2" style="width:100%;" @click="publishQuest">📢 发布悬赏令</button>
+        </div>
+
+        <!-- 悬赏列表 -->
+        <div class="card">
+            <div class="card-title"><span class="emoji">🎯</span> 进行中的悬赏</div>
+            <div class="quest-list">
+                <div v-if="quests.length === 0" class="empty-state">还没有悬赏令，发布一个吧</div>
+                <div v-for="quest in quests" :key="quest.id" class="quest-item">
+                    <div class="quest-title">
+                        <span>{{ quest.title }}</span>
+                        <span class="quest-reward">🪙 {{ quest.reward }}</span>
+                    </div>
+                    <div class="quest-desc" v-if="quest.desc">{{ quest.desc }}</div>
+                    <div class="quest-actions">
+                        <button v-if="!quest.completed" class="primary small-btn" @click="completeQuest(quest)">✍️ 写心得并完成</button>
+                        <button v-else class="small-btn" disabled style="background:#e9eef3;">✅ 已完成</button>
+                        <button class="secondary small-btn" @click="deleteQuest(quest)" style="flex:0 0 70px;">🗑️ 删除</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 金币结算 -->
+        <div class="card">
+            <div class="card-title"><span class="emoji">📊</span> 今日金币结算</div>
+            <div class="flex-between" style="margin-bottom: 8px;">
+                <span style="font-weight:500;">今日收支</span>
+                <span style="font-weight:700; color:#3b3f8c;">{{ todayIncome >= 0 ? '+' : '' }}{{ todayIncome }} 🪙</span>
+            </div>
+            <div class="settlement-list">
+                <div v-if="records.length === 0" class="empty-state" style="padding:12px;">暂无记录</div>
+                <div v-for="r in records" :key="r.id" class="settlement-item">
+                    <div class="note">
+                        <span>{{ r.note }}</span>
+                        <span class="time">{{ r.time }}</span>
+                    </div>
+                    <div class="amount" :class="r.amount >= 0 ? 'positive' : 'negative'">{{ r.amount >= 0 ? '+' : '' }}{{ r.amount }} 🪙</div>
+                </div>
+            </div>
+            <div style="font-size:0.75rem; color:#94a3b8; margin-top: 12px; border-top: 1px dashed #e2e8f0; padding-top: 12px;">
+                ⏱️ 签到金币每日清零，悬赏金币永久有效。消费时优先扣除限时金币。
+            </div>
+        </div>
+
+        <!-- 商城 - 修复删除按钮 -->
+        <div class="card">
+            <div class="card-title"><span class="emoji">🛒</span> 金币商城 <span style="font-size:0.8rem; font-weight:400; color:#94a3b8; margin-left:auto;">限时金币优先</span></div>
+            <div class="store-grid">
+                <div v-for="(item, index) in storeItems" :key="item.id" class="store-item">
+                    <button class="btn-delete-item" @click.stop="deleteGoods(index)" title="下架商品">×</button>
+                    <div class="store-icon">{{ item.icon }}</div>
+                    <div class="store-name">{{ item.name }}</div>
+                    <div class="store-price">{{ item.price }} 🪙</div>
+                    <button class="btn-buy" :disabled="totalCoins < item.price" @click="buyGoods(index, $event)">
+                        {{ totalCoins < item.price ? '金币不足' : '马上兑换' }}
+                    </button>
+                </div>
+            </div>
+            <div class="add-goods-box">
+                <strong style="color:#b45309;">✨ 上架新奖励</strong>
+                <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+                    <input type="text" v-model="newGoods.icon" placeholder="图标" style="width: 70px; flex:1; padding:10px;">
+                    <input type="text" v-model="newGoods.name" placeholder="名称" style="flex:2; padding:10px;">
+                    <input type="number" v-model.number="newGoods.price" placeholder="价格" style="width: 90px; flex:1; padding:10px;">
+                </div>
+                <button class="btn-confirm" @click="addGoods" style="width:100%; margin-top:10px;">上架到商城</button>
+            </div>
+        </div>
+
+        <div class="footer-note">📍 地点签到 · 悬赏令 · 限时金币优先消费</div>
+
+        <!-- Toast -->
+        <div class="toast-message" :class="{show: toastVisible}">{{ toastMsg }}</div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        const STORAGE_KEY = 'coinQuestApp_v2';
+
+        function getDefaultData() {
+            return {
+                day: new Date().toISOString().slice(0,10),
+                limitedCoins: 0,
+                permanentCoins: 0,
+                signed: false,
+                checkinLat: null,
+                checkinLng: null,
+                quests: [],
+                records: [],
+                storeItems: [
+                    { id: 1, icon: '🎮', name: '玩两小时游戏', price: 100 },
+                    { id: 2, icon: '🧋', name: '喝一杯奶茶', price: 50 },
+                    { id: 3, icon: '📺', name: '看一集动漫', price: 30 },
+                ],
+            };
+        }
+
+        function loadData() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (!stored) return getDefaultData();
+            try {
+                const data = JSON.parse(stored);
+                const today = new Date().toISOString().slice(0,10);
+                if (data.day !== today) {
+                    const fresh = getDefaultData();
+                    fresh.permanentCoins = data.permanentCoins || 0;
+                    fresh.quests = data.quests || [];
+                    fresh.storeItems = data.storeItems || fresh.storeItems;
+                    fresh.checkinLat = data.checkinLat || null;
+                    fresh.checkinLng = data.checkinLng || null;
+                    fresh.signed = false;
+                    fresh.limitedCoins = 0;
+                    fresh.records = [];
+                    fresh.day = today;
+                    return fresh;
+                }
+                return { ...getDefaultData(), ...data, limitedCoins: data.limitedCoins || 0, permanentCoins: data.permanentCoins || 0 };
+            } catch (e) {
+                return getDefaultData();
+            }
+        }
+
+        function saveData(data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        createApp({
+            setup() {
+                const appData = ref(loadData());
+                const toastVisible = ref(false);
+                const toastMsg = ref('');
+                const geoStatus = ref('');
+                const nearby = ref(false);
+                const newQuest = ref({ title: '', desc: '', reward: 80 });
+                const newGoods = ref({ icon: '', name: '', price: '' });
+
+                const totalCoins = computed(() => appData.value.limitedCoins + appData.value.permanentCoins);
+                const limitedCoins = computed(() => appData.value.limitedCoins);
+                const signed = computed(() => appData.value.signed);
+                const quests = computed(() => appData.value.quests);
+                const records = computed(() => appData.value.records);
+                const storeItems = computed(() => appData.value.storeItems);
+                const checkinLat = computed(() => appData.value.checkinLat);
+                const checkinLng = computed(() => appData.value.checkinLng);
+                const todayIncome = computed(() => appData.value.records.reduce((sum, r) => sum + r.amount, 0));
+
+                function showToast(msg) {
+                    toastMsg.value = msg;
+                    toastVisible.value = true;
+                    clearTimeout(window._toastTimer);
+                    window._toastTimer = setTimeout(() => { toastVisible.value = false; }, 2200);
+                }
+
+                function refreshReward() {
+                    newQuest.value.reward = Math.floor(Math.random() * 181) + 20;
+                }
+
+                function publishQuest() {
+                    const title = newQuest.value.title.trim();
+                    if (!title) { showToast('请输入任务标题'); return; }
+                    appData.value.quests.push({
+                        id: Date.now() + Math.floor(Math.random() * 1000),
+                        title, desc: newQuest.value.desc.trim(),
+                        reward: newQuest.value.reward, completed: false,
+                    });
+                    saveData(appData.value);
+                    newQuest.value.title = '';
+                    newQuest.value.desc = '';
+                    refreshReward();
+                    showToast(`悬赏发布成功！报酬 ${appData.value.quests[appData.value.quests.length-1].reward} 金币`);
+                }
+
+                function deleteQuest(quest) {
+                    const idx = appData.value.quests.findIndex(q => q.id === quest.id);
+                    if (idx === -1) return;
+                    if (!quest.completed && !confirm('悬赏尚未完成，确定删除吗？')) return;
+                    appData.value.quests.splice(idx, 1);
+                    saveData(appData.value);
+                    showToast('已删除悬赏');
+                }
+
+                function completeQuest(quest) {
+                    if (quest.completed) { showToast('该悬赏已完成'); return; }
+                    const insight = prompt('请填写任务心得（至少10个字）:', '');
+                    if (insight === null) return;
+                    const trimmed = insight.trim();
+                    if (trimmed.length < 10) { showToast('心得至少10个字，请重新填写'); return; }
+                    appData.value.permanentCoins += quest.reward;
+                    quest.completed = true;
+                    addRecord('完成任务「' + quest.title + '」(永久)', quest.reward);
+                    triggerRandomCelebration();
+                    saveData(appData.value);
+                    showToast(`任务完成！获得 ${quest.reward} 永久金币`);
+                }
+
+                function addRecord(note, amount) {
+                    const now = new Date();
+                    const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                    appData.value.records.unshift({ id: Date.now() + Math.random(), time: timeStr, note, amount });
+                    if (appData.value.records.length > 60) appData.value.records.pop();
+                    saveData(appData.value);
+                }
+
+                function locate() {
+                    if (!navigator.geolocation) {
+                        geoStatus.value = '浏览器不支持定位';
+                        nearby.value = false;
+                        return;
+                    }
+                    // 检测是否为安全上下文
+                    if (!window.isSecureContext) {
+                        geoStatus.value = '⚠️ 非HTTPS环境，定位被浏览器禁用。请通过HTTPS访问本页（如GitHub Pages）';
+                        nearby.value = false;
+                        return;
+                    }
+                    geoStatus.value = '定位中...';
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            const lat = pos.coords.latitude;
+                            const lng = pos.coords.longitude;
+                            if (appData.value.checkinLat == null || appData.value.checkinLng == null) {
+                                geoStatus.value = '尚未设置签到点，请先设置';
+                                nearby.value = false;
+                                return;
+                            }
+                            const R = 6371e3;
+                            const φ1 = lat * Math.PI / 180;
+                            const φ2 = appData.value.checkinLat * Math.PI / 180;
+                            const Δφ = (appData.value.checkinLat - lat) * Math.PI / 180;
+                            const Δλ = (appData.value.checkinLng - lng) * Math.PI / 180;
+                            const a = Math.sin(Δφ/2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) ** 2;
+                            const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                            if (distance <= 200) {
+                                nearby.value = true;
+                                geoStatus.value = `✅ 距离签到点 ${distance.toFixed(0)} 米，可以签到`;
+                            } else {
+                                nearby.value = false;
+                                geoStatus.value = `❌ 距离签到点 ${distance.toFixed(0)} 米，需在200米内`;
+                            }
+                        },
+                        (err) => {
+                            if (err.code === 1) {
+                                geoStatus.value = '❌ 定位权限被拒绝，请在浏览器设置中允许定位';
+                            } else {
+                                geoStatus.value = `❌ 定位失败: ${err.message}`;
+                            }
+                            nearby.value = false;
+                        },
+                        { enableHighAccuracy: true, timeout: 10000 }
+                    );
+                }
+
+                function setCheckinLocation() {
+                    if (!navigator.geolocation) { showToast('浏览器不支持定位'); return; }
+                    if (!window.isSecureContext) { showToast('⚠️ 需要HTTPS环境才能定位'); return; }
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            appData.value.checkinLat = pos.coords.latitude;
+                            appData.value.checkinLng = pos.coords.longitude;
+                            saveData(appData.value);
+                            showToast('签到点已设为当前坐标');
+                            locate();
+                        },
+                        (err) => { showToast('获取位置失败: ' + err.message); }
+                    );
+                }
+
+                function signIn() {
+                    if (appData.value.signed) { showToast('今日已签到'); return; }
+                    if (!nearby.value) { showToast('不在签到范围内，请先定位检查'); return; }
+                    appData.value.limitedCoins += 100;
+                    appData.value.signed = true;
+                    addRecord('地点签到奖励(限时)', 100);
+                    saveData(appData.value);
+                    showToast('签到成功！+100 限时金币');
+                    triggerRandomCelebration();
+                }
+
+                function buyGoods(index, event) {
+                    const item = appData.value.storeItems[index];
+                    if (totalCoins.value < item.price) { showToast('金币不足'); return; }
+                    if (!confirm(`确定花费 ${item.price} 金币兑换【${item.name}】吗？\n(优先扣除限时金币)`)) return;
+
+                    let remaining = item.price;
+                    if (appData.value.limitedCoins >= remaining) {
+                        appData.value.limitedCoins -= remaining;
+                        remaining = 0;
+                    } else {
+                        remaining -= appData.value.limitedCoins;
+                        appData.value.limitedCoins = 0;
+                        appData.value.permanentCoins -= remaining;
+                    }
+                    addRecord(`兑换商城「${item.name}」`, -item.price);
+                    saveData(appData.value);
+                    showToast(`成功兑换 ${item.name}！`);
+
+                    if (event) {
+                        const rect = event.target.getBoundingClientRect();
+                        const x = (rect.left + rect.width / 2) / window.innerWidth;
+                        const y = (rect.top + rect.height / 2) / window.innerHeight;
+                        confetti({ particleCount: 60, spread: 360, origin: { x, y }, colors: ['#ffb300', '#4CAF50', '#03A9F4'], zIndex: 9999 });
+                    }
+                }
+
+                function addGoods() {
+                    if (!newGoods.value.name || !newGoods.value.price) { showToast('请填写商品名称和价格'); return; }
+                    const price = parseInt(newGoods.value.price);
+                    if (isNaN(price) || price <= 0) { showToast('价格必须为正整数'); return; }
+                    appData.value.storeItems.push({
+                        id: Date.now(),
+                        icon: newGoods.value.icon || '🎁',
+                        name: newGoods.value.name,
+                        price: price,
+                    });
+                    newGoods.value = { icon: '', name: '', price: '' };
+                    saveData(appData.value);
+                    showToast('商品已上架');
+                }
+
+                function deleteGoods(index) {
+                    if (!confirm('确定下架该商品吗？')) return;
+                    appData.value.storeItems.splice(index, 1);
+                    saveData(appData.value);
+                    showToast('已下架');
+                }
+
+                function showFloatingElement(type, text) {
+                    const el = document.createElement('div');
+                    el.className = `effect-${type}`;
+                    el.innerText = text;
+                    document.body.appendChild(el);
+                    setTimeout(() => { if (el.parentNode) document.body.removeChild(el); }, 3000);
+                }
+
+                function triggerRandomCelebration() {
+                    const effects = [
+                        () => {
+                            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6, x: 0 }, colors: ['#ffb300', '#4CAF50', '#03A9F4'], zIndex: 9999 });
+                            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6, x: 1 }, colors: ['#ffb300', '#4CAF50', '#03A9F4'], zIndex: 9999 });
+                        },
+                        () => {
+                            var end = Date.now() + 2000;
+                            (function frame() {
+                                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, zIndex: 9999 });
+                                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, zIndex: 9999 });
+                                if (Date.now() < end) { requestAnimationFrame(frame); }
+                            }());
+                        },
+                        () => {
+                            var fish = confetti.shapeFromText({ text: '🐟', scalar: 2 });
+                            confetti({ particleCount: 100, spread: 360, origin: { y: 0 }, gravity: 1.5, shapes: [fish], scalar: 2, zIndex: 9999 });
+                        },
+                        () => {
+                            var end = Date.now() + 2000;
+                            (function frame() {
+                                confetti({ particleCount: 2, angle: 90, spread: 360, startVelocity: 15, gravity: 0.5, origin: { y: 0 }, colors: ['#ffffff', '#e0f7fa', '#b2ebf2'], zIndex: 9999 });
+                                if (Date.now() < end) { requestAnimationFrame(frame); }
+                            }());
+                        },
+                        () => { confetti({ particleCount: 200, spread: 180, origin: { y: -0.2 }, gravity: 1.2, colors: ['#FFD700', '#FFA500', '#FF8C00'], zIndex: 9999 }); },
+                        () => { showFloatingElement('thumb', '👍'); },
+                        () => { showFloatingElement('neon', '太强了!🔥'); },
+                        () => { showFloatingElement('100', '100'); },
+                        () => { showFloatingElement('crown', '👑'); },
+                        () => { showFloatingElement('cat', '🐱'); },
+                    ];
+                    effects[Math.floor(Math.random() * effects.length)]();
+                }
+
+                onMounted(() => {
+                    refreshReward();
+                    if (appData.value.checkinLat != null) locate();
+                    setInterval(() => {
+                        const today = new Date().toISOString().slice(0,10);
+                        if (appData.value.day !== today) {
+                            const fresh = loadData();
+                            appData.value = fresh;
+                            saveData(appData.value);
+                            showToast('新的一天！限时金币已重置');
+                            nearby.value = false;
+                            geoStatus.value = '';
+                        }
+                    }, 30000);
+                });
+
+                return {
+                    appData, totalCoins, limitedCoins, signed, quests, records, storeItems,
+                    checkinLat, checkinLng, todayIncome, newQuest, newGoods,
+                    toastVisible, toastMsg, geoStatus, nearby,
+                    refreshReward, publishQuest, deleteQuest, completeQuest,
+                    signIn, locate, setCheckinLocation, buyGoods, addGoods, deleteGoods,
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
