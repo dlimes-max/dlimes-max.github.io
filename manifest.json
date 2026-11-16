@@ -1,0 +1,20 @@
+{
+  "name": "金币悬赏令",
+  "short_name": "悬赏令",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f2f5fc",
+  "theme_color": "#3b3f8c",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192/3b3f8c/ffffff?text=🪙",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://via.placeholder.com/512/3b3f8c/ffffff?text=🪙",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
