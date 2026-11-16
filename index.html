@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>金币悬赏令 · 地点签到 + 商城</title>
+    <link rel="manifest" href="/manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
@@ -589,6 +590,11 @@
                 };
             }
         }).mount('#app');
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.register('/sw.js');
+        }
     </script>
 </body>
 </html>
